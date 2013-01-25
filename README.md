@@ -1,0 +1,4 @@
+NaNoBot
+=======
+
+IRC chatbot
