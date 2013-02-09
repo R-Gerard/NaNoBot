@@ -95,10 +95,10 @@ public class NaNoBot extends PircBot implements Runnable {
     initScheduler();
 
     // TODO: Read these from the config file and create them dynamically
-    scheduleJob("timer_start_warning", "0 9/20 * 1/1 * ? *", "Sprint in 1 minute");
-    scheduleJob("timer_start", "0 10/20 * 1/1 * ? *", "GO!");
-    scheduleJob("timer_finish_warning", "0 19/20 * 1/1 * ? *", "1 minute remaining");
-    scheduleJob("timer_finish", "0 0/20 * 1/1 * ? *", "TIME'S UP!");
+    scheduleJob("timer_start_warning", "0 19/20 * 1/1 * ? *", "Sprint in 1 minute");
+    scheduleJob("timer_start", "0 0/20 * 1/1 * ? *", "GO!");
+    scheduleJob("timer_finish_warning", "0 9/20 * 1/1 * ? *", "1 minute remaining");
+    scheduleJob("timer_finish", "0 10/20 * 1/1 * ? *", "TIME'S UP!");
   }
 
   public void sendMessage(String message) {
