@@ -16,7 +16,6 @@
  */
 package com.callidusrobotics.irc;
 
-import org.jibble.pircbot.PircBot;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -25,11 +24,10 @@ import org.quartz.JobExecutionException;
 public class MessageJob implements Job {
 
   public static final String BOT_KEY = "BOT";
-  public static final String CHANNEL_KEY = "CHANNEL";
   public static final String MESSAGE_KEY = "MESSAGE";
 
-  protected PircBot bot;
-  protected String channel, message;
+  protected NaNoBot bot;
+  protected String message;
 
   public MessageJob() {}
 
@@ -37,11 +35,10 @@ public class MessageJob implements Job {
   public void execute(JobExecutionContext context) throws JobExecutionException {
     JobDataMap data = context.getJobDetail().getJobDataMap();
 
-    bot = (PircBot) data.get(BOT_KEY);
-    channel = data.getString(CHANNEL_KEY);
+    bot = (NaNoBot) data.get(BOT_KEY);
     message = data.getString(MESSAGE_KEY);
 
-    bot.sendMessage(channel, message);
+    bot.sendMessage(message);
   }
 
 }

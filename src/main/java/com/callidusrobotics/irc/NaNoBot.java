@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
@@ -40,7 +41,8 @@ public class NaNoBot extends PircBot implements Runnable {
 
   protected Scheduler scheduler;
   protected String channel;
-  protected String startupMessage;
+  protected String startupMessage, shutdownMessage;
+  protected IrcColor fontColor;
 
   public static void main(final String[] args) throws FileNotFoundException, IOException, NickAlreadyInUseException, IrcException {
     final String fileName = args.length > 0 ? args[0] : "./NaNoBot.properties";
@@ -48,6 +50,14 @@ public class NaNoBot extends PircBot implements Runnable {
     properties.load(new FileInputStream(new File(fileName)));
 
     final NaNoBot naNoBot = new NaNoBot(properties);
+    
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        naNoBot.shutdown();
+      }
+    });
+
     naNoBot.run();
   }
 
@@ -58,7 +68,10 @@ public class NaNoBot extends PircBot implements Runnable {
     String name = properties.getProperty("user.login", "NaNoBot");
     String password = properties.getProperty("user.password");
 
-    startupMessage = properties.getProperty("bot.startupMessage", "Hello, World!");
+    startupMessage = properties.getProperty("bot.startupMessage", "Hello, everyone!");
+    shutdownMessage = properties.getProperty("bot.shutdownMessage", "Goodbye, everyone!");
+
+    fontColor = IrcColor.valueOf(StringUtils.upperCase(properties.getProperty("font.color", IrcColor.BLACK.name())));
 
     boolean verbose = Boolean.parseBoolean(properties.getProperty("log.verbose", Boolean.TRUE.toString()));
     boolean runIdentServer = Boolean.parseBoolean(properties.getProperty("identServer.enabled", Boolean.TRUE.toString()));
@@ -88,8 +101,12 @@ public class NaNoBot extends PircBot implements Runnable {
     scheduleJob("timer_finish", "0 0/20 * 1/1 * ? *", "TIME'S UP!");
   }
 
+  public void sendMessage(String message) {
+    sendMessage(channel, fontColor + message);
+  }
+
   public void run() {
-    sendMessage(channel, startupMessage);
+    sendMessage(startupMessage);
     startScheduler();
 
     try {
@@ -98,7 +115,13 @@ public class NaNoBot extends PircBot implements Runnable {
       }
     } catch (InterruptedException e) {}
 
+    shutdown();
+  }
+
+  public void shutdown() {
+    sendMessage(shutdownMessage);
     stopScheduler();
+    quitServer("Shutting down");
     disconnect();
   }
 
@@ -132,7 +155,6 @@ public class NaNoBot extends PircBot implements Runnable {
     JobDetail jobDetail = JobBuilder.newJob(MessageJob.class).withIdentity(id + "_job", "messages").build();
 
     jobDetail.getJobDataMap().put(MessageJob.BOT_KEY, this);
-    jobDetail.getJobDataMap().put(MessageJob.CHANNEL_KEY, channel);
     jobDetail.getJobDataMap().put(MessageJob.MESSAGE_KEY, message);
 
     Trigger trigger = TriggerBuilder.newTrigger()
