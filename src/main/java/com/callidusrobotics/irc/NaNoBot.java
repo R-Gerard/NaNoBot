@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
@@ -28,22 +30,16 @@ import org.apache.commons.lang3.Validate;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
-import org.quartz.CronScheduleBuilder;
-import org.quartz.JobBuilder;
-import org.quartz.JobDetail;
-import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
-import org.quartz.SchedulerFactory;
-import org.quartz.Trigger;
-import org.quartz.TriggerBuilder;
-import org.quartz.impl.StdSchedulerFactory;
+
+import com.callidusrobotics.irc.SprintMsgScheduler.MsgMode;
 
 public class NaNoBot extends PircBot implements Runnable {
 
-  protected Scheduler scheduler;
+  protected SprintMsgScheduler scheduler;
   protected String channel;
   protected String startupMessage, shutdownMessage;
   protected IrcColor fontColor;
+  protected List<String> controlUsers = new ArrayList<String>();
 
   public static void main(final String[] args) throws FileNotFoundException, IOException, NickAlreadyInUseException, IrcException {
     final String fileName = args.length > 0 ? args[0] : "./NaNoBot.properties";
@@ -51,7 +47,7 @@ public class NaNoBot extends PircBot implements Runnable {
     properties.load(new FileInputStream(new File(fileName)));
 
     final NaNoBot naNoBot = new NaNoBot(properties);
-    
+
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -69,13 +65,27 @@ public class NaNoBot extends PircBot implements Runnable {
     String name = properties.getProperty("user.login", "NaNoBot");
     String password = properties.getProperty("user.password");
 
-    startupMessage = properties.getProperty("bot.startupMessage", "Hello, everyone!");
-    shutdownMessage = properties.getProperty("bot.shutdownMessage", "Goodbye, everyone!");
+    boolean verbose = Boolean.parseBoolean(properties.getProperty("log.verbose", Boolean.TRUE.toString()));
+    boolean runIdentServer = Boolean.parseBoolean(properties.getProperty("identServer.enabled", Boolean.TRUE.toString()));
+
+    String userList = properties.getProperty("controlUsers", "");
+    String[] users = userList.split(",");
+    for (String user : users) {
+      user = user.trim().toLowerCase();
+      if (user.length() > 0) {
+        controlUsers.add(user);
+      }
+    }
 
     fontColor = IrcColor.valueOf(StringUtils.upperCase(properties.getProperty("font.color", IrcColor.BLACK.name())));
 
-    boolean verbose = Boolean.parseBoolean(properties.getProperty("log.verbose", Boolean.TRUE.toString()));
-    boolean runIdentServer = Boolean.parseBoolean(properties.getProperty("identServer.enabled", Boolean.TRUE.toString()));
+    startupMessage = properties.getProperty("bot.startupMessage", "Hello, everyone!");
+    shutdownMessage = properties.getProperty("bot.shutdownMessage", "Goodbye, everyone!");
+
+    String startWarningMsg = properties.getProperty("sprint.startWarningMessage", "Sprint in 1 minute");
+    String startMsg = properties.getProperty("sprint.startMessage", "GO!");
+    String finishWarningMsg = properties.getProperty("sprint.finishWarningMessage", "1 minute remaining");
+    String finishMsg = properties.getProperty("sprint.finishMessage", "TIME'S UP!");
 
     Validate.notBlank(server);
     Validate.notNull(port);
@@ -93,22 +103,60 @@ public class NaNoBot extends PircBot implements Runnable {
     connect(server, port, password);
     joinChannel(channel);
 
-    initScheduler();
+    scheduler = new SprintMsgScheduler(this);
 
-    // TODO: Read these from the config file and create them dynamically
-    scheduleJob("timer_start_warning", "0 19/20 * 1/1 * ? *", "Sprint in 1 minute");
-    scheduleJob("timer_start", "0 0/20 * 1/1 * ? *", "GO!");
-    scheduleJob("timer_finish_warning", "0 9/20 * 1/1 * ? *", "1 minute remaining");
-    scheduleJob("timer_finish", "0 10/20 * 1/1 * ? *", "TIME'S UP!");
+    scheduler.setStartWarningMsg(startWarningMsg);
+    scheduler.setStartMsg(startMsg);
+    scheduler.setFinishWarningMsg(finishWarningMsg);
+    scheduler.setFinishMsg(finishMsg);
+
+    scheduler.setMode(MsgMode.MODE_10A);
   }
 
   public void sendMessage(String message) {
     sendMessage(channel, fontColor + message);
   }
 
+  @Override
+  protected void onPrivateMessage(String sender, String login, String hostname, String message) {
+    System.out.println("Recieved PM from " + sender + ": " + message);
+
+    if (!controlUsers.isEmpty() && !controlUsers.contains(sender.toLowerCase())) {
+      sendMessage(sender, fontColor + "Access Denied");
+    }
+
+    String[] tokens = message.split("\\s+");
+    for (int i = tokens.length - 1; i >= 0; i--) {
+      String token = tokens[i].toLowerCase();
+
+      for (MsgMode mode : MsgMode.values()) {
+        if (token.contains(mode.toString().toLowerCase())) {
+          sendMessage(sender, fontColor + "Setting sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
+          sendMessage(channel, fontColor + sender + " set sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
+          scheduler.setMode(mode);
+          return;
+        }
+      }
+
+      if (token.contains("current") || token.contains("mode")) {
+        sendMessage(sender, fontColor + "My current mode is: " + scheduler.getMode() + ".");
+        return;
+      }
+
+      if (token.contains("help") || token.contains("explain") || token.contains("?")) {
+        sendMessage(sender, fontColor + "My current mode is: " + scheduler.getMode() + ".");
+        sendMessage(sender, fontColor + "These are my supported modes:");
+        for (MsgMode mode : MsgMode.values()) {
+          sendMessage(sender, fontColor + "" + mode + ": " + mode.getDescription() + ".");
+        }
+      }
+    }
+  }
+
+  @Override
   public void run() {
     sendMessage(startupMessage);
-    startScheduler();
+    scheduler.start();
 
     try {
       while (true) {
@@ -121,54 +169,8 @@ public class NaNoBot extends PircBot implements Runnable {
 
   public void shutdown() {
     sendMessage(shutdownMessage);
-    stopScheduler();
+    scheduler.stop();
     quitServer("Shutting down");
     disconnect();
-  }
-
-  protected void initScheduler() {
-    SchedulerFactory schedulerFactactory = new StdSchedulerFactory();
-
-    try {
-      scheduler = schedulerFactactory.getScheduler();
-    } catch (SchedulerException e) {
-      e.printStackTrace();
-    }
-  }
-
-  protected void startScheduler() {
-    try {
-      scheduler.start();
-    } catch (SchedulerException e) {
-      e.printStackTrace();
-    }
-  }
-
-  protected void stopScheduler() {
-    try {
-      scheduler.shutdown(true);
-    } catch (SchedulerException e) {
-      e.printStackTrace();
-    }
-  }
-
-  protected void scheduleJob(String id, String cronExpression, String message) {
-    JobDetail jobDetail = JobBuilder.newJob(MessageJob.class).withIdentity(id + "_job", "messages").build();
-
-    jobDetail.getJobDataMap().put(MessageJob.BOT_KEY, this);
-    jobDetail.getJobDataMap().put(MessageJob.MESSAGE_KEY, message);
-
-    Trigger trigger = TriggerBuilder.newTrigger()
-        .withIdentity(id + "_trigger", "messages")
-        .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionIgnoreMisfires())
-        .forJob(jobDetail)
-        .build();
-
-    try {
-      scheduler.scheduleJob(jobDetail, trigger);
-      System.out.println("Scheduled job " + id);
-    } catch (SchedulerException e) {
-      e.printStackTrace();
-    }
   }
 }
