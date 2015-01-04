@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>NaNoBot</groupId>
+  <groupId>com.callidusrobotics.irc</groupId>
   <artifactId>NaNoBot</artifactId>
   <packaging>jar</packaging>
   <version>1.0.0-SNAPSHOT</version>
@@ -11,20 +11,39 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.jdkVersion>1.7</project.build.jdkVersion>
     <project.mainClass>com.callidusrobotics.irc.NaNoBot</project.mainClass>
+    <project.releaseRepo>file://~/.m2/repository/</project.releaseRepo>
+    <project.snapshotRepo>file://~/.m2/repository/</project.snapshotRepo>
   </properties>
-  
+
+  <distributionManagement>
+    <repository>
+      <id>releases</id>
+      <url>${project.releaseRepo}</url>
+    </repository>
+    <snapshotRepository>
+      <id>releases</id>
+      <url>${project.snapshotRepo}</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <scm>
+    <connection>scm:git:git@github.com:R-Gerard/NaNoBot.git</connection>
+    <developerConnection>scm:git:git@github.com:R-Gerard/NaNoBot.git</developerConnection>
+    <url>http://github.com/R-Gerard/NaNoBot</url>
+  </scm>
+
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>
       <url>http://www.gnu.org/licenses/gpl.txt</url>
     </license>
   </licenses>
-  
+
   <organization>
     <name>Callidus Robotics</name>
     <url>http://github.com/r-gerard</url>
   </organization>
-  
+
   <developers>
     <developer>
       <id>r-gerard</id>
@@ -34,37 +53,30 @@
 
   <dependencies>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    
-    <dependency>
       <groupId>pircbot</groupId>
       <artifactId>pircbot</artifactId>
       <version>1.5.0</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.1</version>
     </dependency>
-    
+
     <dependency>
       <groupId>org.quartz-scheduler</groupId>
       <artifactId>quartz</artifactId>
       <version>2.1.6</version>
     </dependency>
-    
+
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
       <version>1.2.17</version>
     </dependency>
   </dependencies>
-  
+
   <build>
     <plugins>
       <plugin>
@@ -76,7 +88,7 @@
           <target>${project.build.jdkVersion}</target>
         </configuration>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
