@@ -19,6 +19,15 @@ java -jar NaNoBot.jar
 Depending on your firewall settings you may need to open ports 6667 and 113 to TCP traffic.
 
 
+Checking The Executable Version
+-------------------------------
+
+You can check the version of your NaNoBot executable from the command line using
+```
+java -jar NaNoBot.jar --version
+```
+
+
 Properties File Format
 ----------------------
 
@@ -67,12 +76,17 @@ Send NaNoBot a private message to view/change modes.
 
 | Private Message | Description | Aliases |
 | --------------- | ----------- | ------- |
+| version | Displays NaNoBot's version | N/A |
 | help | Displays NaNoBot's current mode and the name and description of each mode it supports | "explain", '?' |
 | mode | Displays NaNoBot's current mode | "current" |
 | {mode name} | Sets NaNoBot's current mode to the desired mode | N/A |
 
 Examples:
 ```
+/msg NaNoBot version
+
+NaNoBot 1.0.0
+
 /msg NaNoBot mode
 
 NaNoBot	My current mode is: MODE_10A.

@@ -42,6 +42,11 @@ public class NaNoBot extends PircBot implements Runnable {
   protected List<String> controlUsers = new ArrayList<String>();
 
   public static void main(final String[] args) throws FileNotFoundException, IOException, NickAlreadyInUseException, IrcException {
+    if (args.length > 0 && "--version".equals(args[0])) {
+      System.out.println("NaNoBot version: " + getImplementationVersion());
+      System.exit(0);
+    }
+
     final String fileName = args.length > 0 ? args[0] : "./NaNoBot.properties";
     final Properties properties = new Properties();
     properties.load(new FileInputStream(new File(fileName)));
@@ -56,6 +61,17 @@ public class NaNoBot extends PircBot implements Runnable {
     });
 
     naNoBot.run();
+  }
+
+  private static String getImplementationVersion() {
+    final Package myPackage = NaNoBot.class.getPackage();
+    final String implementationVersion = myPackage.getImplementationVersion();
+
+    if (implementationVersion == null || StringUtils.isBlank(implementationVersion)) {
+      return "DEBUG";
+    }
+
+    return implementationVersion;
   }
 
   public NaNoBot(final Properties properties) throws NickAlreadyInUseException, IOException, IrcException {
@@ -136,6 +152,11 @@ public class NaNoBot extends PircBot implements Runnable {
           scheduler.setMode(mode);
           return;
         }
+      }
+
+      if (token.contains("version")) {
+        sendMessage(sender, fontColor + getImplementationVersion());
+        return;
       }
 
       if (token.contains("current") || token.contains("mode")) {
