@@ -15,11 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.callidusrobotics.irc;
+package com.callidusrobotics.irc.scheduler;
 
-import org.quartz.SchedulerException;
+import java.util.Map;
 
-public class SprintMsgScheduler extends MessageScheduler {
+import com.callidusrobotics.irc.NaNoBot;
+
+public class SprintMsgScheduler extends JobScheduler {
   public static enum MsgMode {
     MODE_10A("10-minute sprints starting at the top of the hour (with 10-minute breaks in-between)"),
     MODE_10B("10-minute sprints starting at the bottom of the hour (with 10-minute breaks in-between)"),
@@ -49,8 +51,11 @@ public class SprintMsgScheduler extends MessageScheduler {
 
   protected MsgMode mode = MsgMode.MODE_10A;
 
-  public SprintMsgScheduler(NaNoBot naNoBot) {
+  protected Map<String,String> scripts;
+  
+  public SprintMsgScheduler(NaNoBot naNoBot, Map<String,String> scripts) {
     super(naNoBot);
+    this.scripts = scripts;
   }
 
   public synchronized void setMode(MsgMode mode) {
@@ -58,11 +63,7 @@ public class SprintMsgScheduler extends MessageScheduler {
       return;
     }
 
-    try {
-      scheduler.clear();
-    } catch (SchedulerException e) {
-      e.printStackTrace();
-    }
+    clear();
 
     this.mode = mode;
 
@@ -86,6 +87,8 @@ public class SprintMsgScheduler extends MessageScheduler {
       default:
         break;
     }
+
+    scheduleScriptJobs();
   }
 
   public MsgMode getMode() {
@@ -109,30 +112,39 @@ public class SprintMsgScheduler extends MessageScheduler {
   }
 
   protected void scheduleMode10A() {
-    scheduleJob(START_WARNING_ID,  "0 19/20 * * * ? *", startWarningMsg);
-    scheduleJob(START_ID,          "0 0/20 * * * ? *", startMsg);
-    scheduleJob(FINISH_WARNING_ID, "0 9/20 * * * ? *", finishWarningMsg);
-    scheduleJob(FINISH_ID,         "0 10/20 * * * ? *", finishMsg);
+    scheduleMessageJob(START_WARNING_ID,  "0 19/20 * * * ? *", startWarningMsg);
+    scheduleMessageJob(START_ID,          "0 0/20 * * * ? *", startMsg);
+    scheduleMessageJob(FINISH_WARNING_ID, "0 9/20 * * * ? *", finishWarningMsg);
+    scheduleMessageJob(FINISH_ID,         "0 10/20 * * * ? *", finishMsg);
   }
 
   protected void scheduleMode10B() {
-    scheduleJob(START_WARNING_ID,  "0 9/20 * * * ? *", startWarningMsg);
-    scheduleJob(START_ID,          "0 10/20 * * * ? *", startMsg);
-    scheduleJob(FINISH_WARNING_ID, "0 19/20 * * * ? *", finishWarningMsg);
-    scheduleJob(FINISH_ID,         "0 0/20 * * * ? *", finishMsg);
+    scheduleMessageJob(START_WARNING_ID,  "0 9/20 * * * ? *", startWarningMsg);
+    scheduleMessageJob(START_ID,          "0 10/20 * * * ? *", startMsg);
+    scheduleMessageJob(FINISH_WARNING_ID, "0 19/20 * * * ? *", finishWarningMsg);
+    scheduleMessageJob(FINISH_ID,         "0 0/20 * * * ? *", finishMsg);
   }
 
   protected void scheduleMode20A() {
-    scheduleJob(START_WARNING_ID,  "0 29/30 * * * ? *", startWarningMsg);
-    scheduleJob(START_ID,          "0 0/30 * * * ? *", startMsg);
-    scheduleJob(FINISH_WARNING_ID, "0 19/30 * * * ? *", finishWarningMsg);
-    scheduleJob(FINISH_ID,         "0 20/30 * * * ? *", finishMsg);
+    scheduleMessageJob(START_WARNING_ID,  "0 29/30 * * * ? *", startWarningMsg);
+    scheduleMessageJob(START_ID,          "0 0/30 * * * ? *", startMsg);
+    scheduleMessageJob(FINISH_WARNING_ID, "0 19/30 * * * ? *", finishWarningMsg);
+    scheduleMessageJob(FINISH_ID,         "0 20/30 * * * ? *", finishMsg);
   }
 
   protected void scheduleMode20B() {
-    scheduleJob(START_WARNING_ID,  "0 14/30 * * * ? *", startWarningMsg);
-    scheduleJob(START_ID,          "0 15/30 * * * ? *", startMsg);
-    scheduleJob(FINISH_WARNING_ID, "0 4/30 * * * ? *", finishWarningMsg);
-    scheduleJob(FINISH_ID,         "0 5/30 * * * ? *", finishMsg);
+    scheduleMessageJob(START_WARNING_ID,  "0 14/30 * * * ? *", startWarningMsg);
+    scheduleMessageJob(START_ID,          "0 15/30 * * * ? *", startMsg);
+    scheduleMessageJob(FINISH_WARNING_ID, "0 4/30 * * * ? *", finishWarningMsg);
+    scheduleMessageJob(FINISH_ID,         "0 5/30 * * * ? *", finishMsg);
+  }
+
+  protected void scheduleScriptJobs() {
+    for (Map.Entry<String,String> entry : scripts.entrySet()) {
+      String key = entry.getKey();
+      String value = entry.getValue();
+
+      scheduleScriptJob(key.replaceAll("[.]", "_"), value, key);
+    }
   }
 }

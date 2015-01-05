@@ -15,31 +15,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.callidusrobotics.irc;
+package com.callidusrobotics.irc.scheduler;
 
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
-public class MessageJob implements Job {
+import com.callidusrobotics.irc.NaNoBot;
+
+public abstract class AbstractJob implements Job {
 
   public static final String BOT_KEY = "BOT";
-  public static final String MESSAGE_KEY = "MESSAGE";
 
   protected NaNoBot bot;
-  protected String message;
-
-  public MessageJob() {}
+  protected JobDataMap data;
 
   @Override
   public void execute(JobExecutionContext context) throws JobExecutionException {
-    JobDataMap data = context.getJobDetail().getJobDataMap();
-
+    data = context.getJobDetail().getJobDataMap();
     bot = (NaNoBot) data.get(BOT_KEY);
-    message = data.getString(MESSAGE_KEY);
 
-    bot.sendMessage(message);
+    executeDelegate(context);
   }
 
+  public abstract void executeDelegate(JobExecutionContext context) throws JobExecutionException;
 }

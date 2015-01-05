@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.callidusrobotics.irc;
+package com.callidusrobotics.irc.scheduler;
 
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
@@ -27,12 +27,14 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
 
-public class MessageScheduler {
+import com.callidusrobotics.irc.NaNoBot;
 
-  protected NaNoBot naNoBot;
-  protected Scheduler scheduler;
+public class JobScheduler {
 
-  public MessageScheduler(NaNoBot naNoBot) {
+  private NaNoBot naNoBot;
+  private Scheduler scheduler;
+
+  public JobScheduler(NaNoBot naNoBot) {
     this.naNoBot = naNoBot;
     SchedulerFactory schedulerFactactory = new StdSchedulerFactory();
 
@@ -59,12 +61,15 @@ public class MessageScheduler {
     }
   }
 
-  public void scheduleJob(String id, String cronExpression, String message) {
-    JobDetail jobDetail = JobBuilder.newJob(MessageJob.class).withIdentity(id + "_job", "messages").build();
+  public void clear() {
+    try {
+      scheduler.clear();
+    } catch (SchedulerException e) {
+      e.printStackTrace();
+    }
+  }
 
-    jobDetail.getJobDataMap().put(MessageJob.BOT_KEY, naNoBot);
-    jobDetail.getJobDataMap().put(MessageJob.MESSAGE_KEY, message);
-
+  private void scheduleJob(String id, String cronExpression, String group, JobDetail jobDetail) {
     Trigger trigger = TriggerBuilder.newTrigger()
         .withIdentity(id + "_trigger", "messages")
         .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression).withMisfireHandlingInstructionIgnoreMisfires())
@@ -77,5 +82,23 @@ public class MessageScheduler {
     } catch (SchedulerException e) {
       e.printStackTrace();
     }
+  }
+
+  public void scheduleMessageJob(String id, String cronExpression, String message) {
+    JobDetail jobDetail = JobBuilder.newJob(MessageJob.class).withIdentity(id + "_job", "messages").build();
+
+    jobDetail.getJobDataMap().put(MessageJob.BOT_KEY, naNoBot);
+    jobDetail.getJobDataMap().put(MessageJob.MESSAGE_KEY, message);
+
+    scheduleJob(id, cronExpression, "messages", jobDetail);
+  }
+
+  public void scheduleScriptJob(String id, String cronExpression, String script) {
+    JobDetail jobDetail = JobBuilder.newJob(ScriptJob.class).withIdentity(id + "_job", "scripts").build();
+
+    jobDetail.getJobDataMap().put(ScriptJob.BOT_KEY, naNoBot);
+    jobDetail.getJobDataMap().put(ScriptJob.SCRIPT_KEY, script);
+
+    scheduleJob(id, cronExpression, "scripts", jobDetail);
   }
 }

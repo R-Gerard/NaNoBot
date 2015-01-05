@@ -3,9 +3,10 @@ NaNoBot
 
 IRC chatbot for adminstering "sprints" (timed sessions with breaks).
 
-NaNoBot is built on top of PircBot and Quartz.
+NaNoBot is built on top of PircBot, Quartz, and Groovy.
 * http://www.jibble.org/pircbot.php
 * http://quartz-scheduler.org/
+* http://groovy.codehaus.org/
 
 
 Starting NaNoBot
@@ -57,6 +58,7 @@ Summary of NaNoBot.properties:
 | sprint.startMessage | The message to broadcast to the channel when a sprint has started | GO! |
 | sprint.finishWarningMessage | The message to broadcast to the channel when a sprint is about to end | 1 minute remaining |
 | sprint.finishMessage | The message to broadcast to the channel when a sprint has ended | TIME'S UP! |
+| scripts | A comma-separated list of Groovy scripts to schedule for execution | N/A |
 
 
 Sprint Modes
@@ -105,6 +107,29 @@ NaNoBot	MODE_20A: 20-minute sprints starting at the top and bottom of the hour.
 NaNoBot	MODE_20B: 20-minute sprints starting at the quarter and three-quarter marks.
 ```
 
+Executing Groovy Scripts
+------------------------
+NaNoBot can be scheduled to execute arbitrary Groovy scripts, with each script on its own Quartz schedule.
+
+To enable scripts, you must specify the `scripts` property in the properties file with a comma-separated list of strings. Each of these strings corresponds to a property name and a file placed in the `scripts` directory alongside the NaNoBot jar.
+
+```
+scripts = hourly.groovy, daily.groovy, weekly.groovy
+
+hourly.groovy = 0 0 * * * ? *
+daily.groovy = 0 0 0 * * ? *
+weekly.groovy = 0 0 0 * * SUN *
+```
+
+The filesystem would look like this:
+```
+├───NaNoBot.jar
+├───NaNoBot.properties
+└───scripts/
+    ├───daily.groovy
+    ├───hourly.groovy
+    └───weekly.groovy
+```
 
 Compiling NaNoBot from source
 -----------------------------

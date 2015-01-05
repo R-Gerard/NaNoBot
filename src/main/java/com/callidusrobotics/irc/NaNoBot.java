@@ -22,7 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +33,8 @@ import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
 
-import com.callidusrobotics.irc.SprintMsgScheduler.MsgMode;
+import com.callidusrobotics.irc.scheduler.SprintMsgScheduler;
+import com.callidusrobotics.irc.scheduler.SprintMsgScheduler.MsgMode;
 
 public class NaNoBot extends PircBot implements Runnable {
 
@@ -74,7 +77,7 @@ public class NaNoBot extends PircBot implements Runnable {
     return implementationVersion;
   }
 
-  public NaNoBot(final Properties properties) throws NickAlreadyInUseException, IOException, IrcException {
+  public NaNoBot(final Properties properties) throws NickAlreadyInUseException, IOException, IrcException {   
     String server = properties.getProperty("irc.server", "irc.sorcery.net");
     Integer port = Integer.parseInt(properties.getProperty("irc.port", "6667"));
     channel = properties.getProperty("irc.channel", "#wrimosea");
@@ -119,7 +122,20 @@ public class NaNoBot extends PircBot implements Runnable {
     connect(server, port, password);
     joinChannel(channel);
 
-    scheduler = new SprintMsgScheduler(this);
+    // Look for a property called "scripts" which should be a comma-separated list
+    // scripts = foo.groovy, bar.groovy
+    // Then search for a corresponding property for each script, the value of which should be a cron expression
+    // TODO: Verify that the specified script files actually exist AND that the cronExpression is valid before adding the keypairs to the map
+    Map<String,String> scriptsMap = new HashMap<String,String>();
+    String[] scripts = properties.getProperty("scripts", "").split(",\\s*");
+    for (String script : scripts) {
+      String cronExpression = properties.getProperty(script);
+      if (!StringUtils.isBlank(cronExpression)) {
+        scriptsMap.put(script, cronExpression);
+      }
+    }
+
+    scheduler = new SprintMsgScheduler(this, scriptsMap);
 
     scheduler.setStartWarningMsg(startWarningMsg);
     scheduler.setStartMsg(startMsg);
