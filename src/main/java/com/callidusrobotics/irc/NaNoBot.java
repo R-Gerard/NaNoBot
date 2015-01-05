@@ -32,6 +32,7 @@ import org.apache.commons.lang3.Validate;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
+import org.jibble.pircbot.User;
 
 import com.callidusrobotics.irc.scheduler.SprintMsgScheduler;
 import com.callidusrobotics.irc.scheduler.SprintMsgScheduler.MsgMode;
@@ -39,8 +40,8 @@ import com.callidusrobotics.irc.scheduler.SprintMsgScheduler.MsgMode;
 public class NaNoBot extends PircBot implements Runnable {
 
   protected SprintMsgScheduler scheduler;
+  protected BotProperties botProperties;
   protected String channel;
-  protected String startupMessage, shutdownMessage;
   protected IrcColor fontColor;
   protected List<String> controlUsers = new ArrayList<String>();
 
@@ -78,17 +79,18 @@ public class NaNoBot extends PircBot implements Runnable {
   }
 
   public NaNoBot(final Properties properties) throws NickAlreadyInUseException, IOException, IrcException {   
-    String server = properties.getProperty("irc.server", "irc.sorcery.net");
-    Integer port = Integer.parseInt(properties.getProperty("irc.port", "6667"));
-    channel = properties.getProperty("irc.channel", "#wrimosea");
-    String name = properties.getProperty("user.login", "NaNoBot");
-    String password = properties.getProperty("user.password");
+    botProperties = new BotProperties(properties);
 
-    boolean verbose = Boolean.parseBoolean(properties.getProperty("log.verbose", Boolean.TRUE.toString()));
-    boolean runIdentServer = Boolean.parseBoolean(properties.getProperty("identServer.enabled", Boolean.TRUE.toString()));
+    String server = botProperties.getServer();
+    int port = botProperties.getPort();
+    channel = botProperties.getChannel();
+    String name = botProperties.getLogin();
+    String password = botProperties.getPassword();
 
-    String userList = properties.getProperty("controlUsers", "");
-    String[] users = userList.split(",");
+    boolean verbose = botProperties.isVerbose();
+    boolean runIdentServer = botProperties.identServerEnabled();
+
+    String[] users = botProperties.getControlUsers();
     for (String user : users) {
       user = user.trim().toLowerCase();
       if (user.length() > 0) {
@@ -96,18 +98,9 @@ public class NaNoBot extends PircBot implements Runnable {
       }
     }
 
-    fontColor = IrcColor.valueOf(StringUtils.upperCase(properties.getProperty("font.color", IrcColor.BLACK.name())));
-
-    startupMessage = properties.getProperty("bot.startupMessage", "Hello, everyone!");
-    shutdownMessage = properties.getProperty("bot.shutdownMessage", "Goodbye, everyone!");
-
-    String startWarningMsg = properties.getProperty("sprint.startWarningMessage", "Sprint in 1 minute");
-    String startMsg = properties.getProperty("sprint.startMessage", "GO!");
-    String finishWarningMsg = properties.getProperty("sprint.finishWarningMessage", "1 minute remaining");
-    String finishMsg = properties.getProperty("sprint.finishMessage", "TIME'S UP!");
+    fontColor = botProperties.getFontColor();
 
     Validate.notBlank(server);
-    Validate.notNull(port);
     Validate.notBlank(channel);
     Validate.notBlank(name);
 
@@ -127,7 +120,7 @@ public class NaNoBot extends PircBot implements Runnable {
     // Then search for a corresponding property for each script, the value of which should be a cron expression
     // TODO: Verify that the specified script files actually exist AND that the cronExpression is valid before adding the keypairs to the map
     Map<String,String> scriptsMap = new HashMap<String,String>();
-    String[] scripts = properties.getProperty("scripts", "").split(",\\s*");
+    String[] scripts = botProperties.getScripts();
     for (String script : scripts) {
       String cronExpression = properties.getProperty(script);
       if (!StringUtils.isBlank(cronExpression)) {
@@ -137,14 +130,28 @@ public class NaNoBot extends PircBot implements Runnable {
 
     scheduler = new SprintMsgScheduler(this, scriptsMap);
 
-    scheduler.setStartWarningMsg(startWarningMsg);
-    scheduler.setStartMsg(startMsg);
-    scheduler.setFinishWarningMsg(finishWarningMsg);
-    scheduler.setFinishMsg(finishMsg);
+    scheduler.setStartWarningMsg(botProperties.getSprintStartWarningMsg());
+    scheduler.setStartMsg(botProperties.getSprintStartMsg());
+    scheduler.setFinishWarningMsg(botProperties.getSprintFinishWarningMsg());
+    scheduler.setFinishMsg(botProperties.getSprintFinishMsg());
 
     scheduler.setMode(MsgMode.MODE_10A);
   }
 
+  public Properties getProperties() {
+    return botProperties.getProperties();
+  }
+
+  public List<String> getUsers() {
+    User[] users = getUsers(channel);
+    List<String> result = new ArrayList<String>(users.length);
+    for (User user : users) {
+      result.add(user.getNick());
+    }
+
+    return result;
+  }
+  
   public void sendMessage(String message) {
     sendMessage(channel, fontColor + message);
   }
@@ -192,7 +199,7 @@ public class NaNoBot extends PircBot implements Runnable {
 
   @Override
   public void run() {
-    sendMessage(startupMessage);
+    sendMessage(botProperties.getStartupMsg());
     scheduler.start();
 
     try {
@@ -205,7 +212,7 @@ public class NaNoBot extends PircBot implements Runnable {
   }
 
   public void shutdown() {
-    sendMessage(shutdownMessage);
+    sendMessage(botProperties.getShutdownMsg());
     scheduler.stop();
     quitServer("Shutting down");
     disconnect();

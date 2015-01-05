@@ -43,21 +43,21 @@ Summary of NaNoBot.properties:
 
 | Property | Description | Default value |
 | -------- | ----------- | ------------- |
-| irc.server | The hostname of the server to connect to | irc.sorcery.net |
-| irc.port | The port number to connect to on the server | 6667 |
-| irc.channel | The name of the channel to broadcast messages to | #wrimosea |
-| identServer.enabled | If this should start an ident server (RFC 1413) on port 113 | true |
-| log.verbose | If verbose logging on the client should be used | true |
-| user.login | The login to use to join the server AND the nick to display | NaNoBot |
-| user.password | The password to use to join the server | N/A |
+| irc_server | The hostname of the server to connect to | irc.sorcery.net |
+| irc_port | The port number to connect to on the server | 6667 |
+| irc_channel | The name of the channel to broadcast messages to | #wrimosea |
+| identServer_enabled | If this should start an ident server (RFC 1413) on port 113 | true |
+| log_verbose | If verbose logging on the client should be used | true |
+| user_login | The login to use to join the server AND the nick to display | NaNoBot |
+| user_password | The password to use to join the server | N/A |
 | controlUsers | A comma-separated list of user nicks that may send PMs to NaNoBot. An empty list means all users may PM NaNoBot. NaNoBot replies, "Access denied" to unauthorized users. | empty (all users may PM NaNoBot) |
-| font.color | The friendly-name of the IRC color code to use when sending messages | BLACK |
-| bot.startupMessage | The message to broadcast to the channel when the bot joins the server | Hello, everyone! |
-| bot.shutdownMessage | The message to broadcast to the channel when the bot leaves the server | Goodbye, everyone! |
-| sprint.startWarningMessage | The message to broadcast to the channel when a sprint is about to start | Sprint in 1 minute |
-| sprint.startMessage | The message to broadcast to the channel when a sprint has started | GO! |
-| sprint.finishWarningMessage | The message to broadcast to the channel when a sprint is about to end | 1 minute remaining |
-| sprint.finishMessage | The message to broadcast to the channel when a sprint has ended | TIME'S UP! |
+| font_color | The friendly-name of the IRC color code to use when sending messages | BLACK |
+| bot_startupMessage | The message to broadcast to the channel when the bot joins the server | Hello, everyone! |
+| bot_shutdownMessage | The message to broadcast to the channel when the bot leaves the server | Goodbye, everyone! |
+| sprint_startWarningMessage | The message to broadcast to the channel when a sprint is about to start | Sprint in 1 minute |
+| sprint_startMessage | The message to broadcast to the channel when a sprint has started | GO! |
+| sprint_finishWarningMessage | The message to broadcast to the channel when a sprint is about to end | 1 minute remaining |
+| sprint_finishMessage | The message to broadcast to the channel when a sprint has ended | TIME'S UP! |
 | scripts | A comma-separated list of Groovy scripts to schedule for execution | N/A |
 
 
@@ -130,6 +130,19 @@ The filesystem would look like this:
     ├───hourly.groovy
     └───weekly.groovy
 ```
+
+Writing Groovy Scripts
+----------------------
+Prior to launching each script, NaNoBot pre-populates numerous variable bindings for the Groovy script engine:
+* Each valid keypair in the properties file (the key must be a valid Groovy identifier)
+* USERS The list of users currently in the channel
+
+Upon completion of the script, all variable bindings are persisted to the NaNoBot properties for subsequent runs (either by the same script or another script) except for the following:
+* USERS
+* MESSAGE
+* Any variable beginning with an underscore (_) character
+
+If the script writes to a variable called "MESSAGE" then NaNoBot will broadcast that message to the channel.
 
 Compiling NaNoBot from source
 -----------------------------

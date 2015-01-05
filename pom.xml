@@ -108,6 +108,8 @@
           </execution>
         </executions>
         <configuration>
+          <finalName>NaNoBot</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
           <archive>
             <manifest>
               <mainClass>${project.mainClass}</mainClass>

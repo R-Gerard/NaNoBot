@@ -17,12 +17,15 @@
 
 package com.callidusrobotics.irc.scheduler;
 
-import java.io.IOException;
-
 import groovy.lang.Binding;
 import groovy.util.GroovyScriptEngine;
 import groovy.util.ResourceException;
 import groovy.util.ScriptException;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobExecutionContext;
@@ -54,8 +57,18 @@ public class ScriptJob extends AbstractJob {
     script = data.getString(SCRIPT_KEY);    
     System.out.println("executing script '" + script + "'...");
 
+    // Set each property as a variable binding for the script engine
     Binding binding = new Binding();
-    // TODO: Get bot's properties and set each key,value pair as a variable bindings
+    Properties properties = bot.getProperties();
+    for (Entry<Object,Object> entry : properties.entrySet()) {
+      String key = (String) entry.getKey();
+      String value = (String) entry.getValue();
+
+      binding.setVariable(key, value);
+    }
+
+    // Add the list of users in the channel as a variable binding for the script engine
+    binding.setVariable("USERS", bot.getUsers());
 
     try {
       gse.run(script, binding);
@@ -63,7 +76,22 @@ public class ScriptJob extends AbstractJob {
       throw new JobExecutionException(e);
     }
 
-    String message = (String) binding.getVariable("message");
+    // Persist the variable bindings back into the bot's properties
+    @SuppressWarnings("unchecked")
+    Map<Object,Object> bindingVariables = (Map<Object,Object>) binding.getVariables();
+    for (Entry<Object,Object> entry : bindingVariables.entrySet()) {
+      String key = (String) entry.getKey();
+
+      if (key.equals("MESSAGE") || key.equals("USERS") || key.startsWith("_")) {
+        continue;
+      }
+
+      String value = (String) entry.getValue();
+      bot.getProperties().setProperty(key, value);
+    }
+    
+    // Send the script's message to the channel
+    String message = (String) binding.getVariable("MESSAGE");
     if (!StringUtils.isBlank(message)) {
       bot.sendMessage(message);
     }

@@ -18,6 +18,7 @@
 package com.callidusrobotics.irc.scheduler;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.callidusrobotics.irc.NaNoBot;
 
@@ -140,7 +141,7 @@ public class SprintMsgScheduler extends JobScheduler {
   }
 
   protected void scheduleScriptJobs() {
-    for (Map.Entry<String,String> entry : scripts.entrySet()) {
+    for (Entry<String,String> entry : scripts.entrySet()) {
       String key = entry.getKey();
       String value = entry.getValue();
 
