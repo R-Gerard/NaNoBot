@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <!-- Using the DuplicateMessageFilter we can suppress repeated logging statements to the channel when no other users are messaging.
+       (We want to catch uninterrupted loops of NaNoBot posting the same startWarn/start/finishWarn/finish messages to the channel.) -->
+  <turboFilter class="ch.qos.logback.classic.turbo.DuplicateMessageFilter">
+    <cacheSize>8</cacheSize>
+    <allowedRepetitions>0</allowedRepetitions>
+  </turboFilter>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="CHANNEL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>channel_messages.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>channel_messages.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{ISO8601} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="PM_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>private_messages.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>private_messages.%d{yyyy-MM-dd}.log</fileNamePattern>
+      <maxHistory>5</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{ISO8601} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="com.callidusrobotics.irc.IrcChannelLog" level="info">
+    <appender-ref ref="CHANNEL_FILE" />
+  </logger>
+
+  <logger name="com.callidusrobotics.irc.IrcPmLog" level="info">
+    <appender-ref ref="PM_FILE" />
+  </logger>
+
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

@@ -144,6 +144,17 @@ Upon completion of the script, all variable bindings are persisted to the NaNoBo
 
 If the script writes to a variable called "MESSAGE" then NaNoBot will broadcast that message to the channel.
 
+
+Logging
+-------
+On startup, NaNoBot creates two rolling log files: `channel_messages.log` and `private_messages.log`.
+
+| File | Description | Rotation Strategy |
+| ---- | ----------- | ----------------- |
+| channel_messages.log | Record of messages sent to the channel (both by NaNoBot and other users). | Daily; 30 days of history |
+| private_messages.log | Record of private messages sent to NaNoBot, as well as its replies. | Daily; 5 days of history |
+
+
 Compiling NaNoBot from source
 -----------------------------
 

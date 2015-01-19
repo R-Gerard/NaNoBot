@@ -33,11 +33,16 @@ import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
 import org.jibble.pircbot.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.callidusrobotics.irc.scheduler.SprintMsgScheduler;
 import com.callidusrobotics.irc.scheduler.SprintMsgScheduler.MsgMode;
 
 public class NaNoBot extends PircBot implements Runnable {
+
+  private transient static final Logger CHANNEL_LOGGER = LoggerFactory.getLogger(NaNoBot.class.getPackage().getName() + ".IrcChannelLog");
+  private transient static final Logger PM_LOGGER = LoggerFactory.getLogger(NaNoBot.class.getPackage().getName() + ".IrcPmLog");
 
   protected SprintMsgScheduler scheduler;
   protected BotProperties botProperties;
@@ -151,17 +156,58 @@ public class NaNoBot extends PircBot implements Runnable {
 
     return result;
   }
-  
-  public void sendMessage(String message) {
+
+  public void sendMessageToChannel(String message) {
+    CHANNEL_LOGGER.info(getName() + ": " + message);
     sendMessage(channel, fontColor + message);
+  }
+
+  public void sendMessageToUser(String user, String message) {
+    PM_LOGGER.info(getName() + " (PRIVMSG TO " + user + "): " + message);
+    sendMessage(user, fontColor + message);
+  }
+
+  @Override
+  protected void onNickChange(String oldNick, String login, String hostname, String newNick) {
+    CHANNEL_LOGGER.info("*** " + oldNick + " is now known as " + newNick);
+  }
+
+  @Override
+  protected void onJoin(String channel, String sender, String login, String hostname) {
+    CHANNEL_LOGGER.info("*** " + sender + " joined " + channel);
+  }
+
+  @Override
+  protected void onPart(String channel, String sender, String login, String hostname) {
+    CHANNEL_LOGGER.info("*** " + sender + " left " + channel);
+  }
+
+  @Override
+  protected void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
+    CHANNEL_LOGGER.info("*** " + sourceNick + " quit IRC. (Reason: " + reason + ")");
+  }
+
+  @Override
+  protected void onAction(String sender, String login, String hostname, String target, String action) {
+    CHANNEL_LOGGER.info("/" + sender + " " + action);
+  }
+
+  @Override
+  protected void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {
+    CHANNEL_LOGGER.info(sourceNick + " announces: " + notice);
+  }
+
+  @Override
+  protected void onMessage(String channel, String sender, String login, String hostname, String message) {
+    CHANNEL_LOGGER.info(sender + ": " + message);
   }
 
   @Override
   protected void onPrivateMessage(String sender, String login, String hostname, String message) {
-    System.out.println("Recieved PM from " + sender + ": " + message);
+    PM_LOGGER.info(sender + ": " + message);
 
     if (!controlUsers.isEmpty() && !controlUsers.contains(sender.toLowerCase())) {
-      sendMessage(sender, fontColor + "Access Denied");
+      sendMessageToUser(sender, "Access Denied");
     }
 
     String[] tokens = message.split("\\s+");
@@ -170,28 +216,28 @@ public class NaNoBot extends PircBot implements Runnable {
 
       for (MsgMode mode : MsgMode.values()) {
         if (token.contains(mode.toString().toLowerCase())) {
-          sendMessage(sender, fontColor + "Setting sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
-          sendMessage(channel, fontColor + sender + " set sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
+          sendMessageToUser(sender, "Setting sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
+          sendMessageToChannel(sender + " set sprint mode to '" + mode + "' (" + mode.getDescription() + ").");
           scheduler.setMode(mode);
           return;
         }
       }
 
       if (token.contains("version")) {
-        sendMessage(sender, fontColor + getImplementationVersion());
+        sendMessageToUser(sender, getImplementationVersion());
         return;
       }
 
       if (token.contains("current") || token.contains("mode")) {
-        sendMessage(sender, fontColor + "My current mode is: " + scheduler.getMode() + ".");
+        sendMessageToUser(sender, "My current mode is: " + scheduler.getMode() + ".");
         return;
       }
 
       if (token.contains("help") || token.contains("explain") || token.contains("?")) {
-        sendMessage(sender, fontColor + "My current mode is: " + scheduler.getMode() + ".");
-        sendMessage(sender, fontColor + "These are my supported modes:");
+        sendMessageToUser(sender, "My current mode is: " + scheduler.getMode() + ".");
+        sendMessageToUser(sender, "These are my supported modes:");
         for (MsgMode mode : MsgMode.values()) {
-          sendMessage(sender, fontColor + "" + mode + ": " + mode.getDescription() + ".");
+          sendMessageToUser(sender, mode + ": " + mode.getDescription() + ".");
         }
       }
     }
@@ -199,7 +245,7 @@ public class NaNoBot extends PircBot implements Runnable {
 
   @Override
   public void run() {
-    sendMessage(botProperties.getStartupMsg());
+    sendMessageToChannel(botProperties.getStartupMsg());
     scheduler.start();
 
     try {
@@ -212,7 +258,7 @@ public class NaNoBot extends PircBot implements Runnable {
   }
 
   public void shutdown() {
-    sendMessage(botProperties.getShutdownMsg());
+    sendMessageToChannel(botProperties.getShutdownMsg());
     scheduler.stop();
     quitServer("Shutting down");
     disconnect();

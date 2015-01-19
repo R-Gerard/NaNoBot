@@ -93,7 +93,7 @@ public class ScriptJob extends AbstractJob {
     // Send the script's message to the channel
     String message = (String) binding.getVariable("MESSAGE");
     if (!StringUtils.isBlank(message)) {
-      bot.sendMessage(message);
+      bot.sendMessageToChannel(message);
     }
   }
 }

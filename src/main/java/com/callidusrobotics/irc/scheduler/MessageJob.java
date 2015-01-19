@@ -31,6 +31,6 @@ public class MessageJob extends AbstractJob {
   public void executeDelegate(JobExecutionContext context) throws JobExecutionException {
     message = data.getString(MESSAGE_KEY);
 
-    bot.sendMessage(message);
+    bot.sendMessageToChannel(message);
   }
 }
