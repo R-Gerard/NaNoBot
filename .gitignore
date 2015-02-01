@@ -90,3 +90,7 @@ Icon
 .Spotlight-V100
 .Trashes
 
+### App-specific ###
+NaNoBot.properties
+*.log
+*.tmp
