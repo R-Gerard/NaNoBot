@@ -31,6 +31,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 
+import com.callidusrobotics.irc.NaNoBot;
+
 public class ScriptJob extends AbstractJob {
 
   public static final String SCRIPT_KEY = "SCRIPT";
@@ -70,6 +72,9 @@ public class ScriptJob extends AbstractJob {
     // Add the list of users in the channel as a variable binding for the script engine
     binding.setVariable("USERS", bot.getUsers());
 
+    // Add the bot's version as a variable binding for the script engine
+    binding.setVariable("VERSION", NaNoBot.getImplementationVersion());
+
     try {
       gse.run(script, binding);
     } catch (ResourceException | ScriptException e) {
@@ -82,18 +87,20 @@ public class ScriptJob extends AbstractJob {
     for (Entry<Object,Object> entry : bindingVariables.entrySet()) {
       String key = (String) entry.getKey();
 
-      if (key.equals("MESSAGE") || key.equals("USERS") || key.startsWith("_")) {
+      if (key.equals("MESSAGE") || key.equals("USERS") || key.equals("VERSION") || key.startsWith("_")) {
         continue;
       }
 
-      String value = (String) entry.getValue();
+      String value = entry.getValue() == null ? "" : entry.getValue().toString();
       bot.getProperties().setProperty(key, value);
     }
-    
+
     // Send the script's message to the channel
-    String message = (String) binding.getVariable("MESSAGE");
-    if (!StringUtils.isBlank(message)) {
-      bot.sendMessageToChannel(message);
+    if (binding.hasVariable("MESSAGE")) {
+      String message = (String) binding.getVariable("MESSAGE");
+      if (!StringUtils.isBlank(message)) {
+        bot.sendMessageToChannel(message);
+      }
     }
   }
 }

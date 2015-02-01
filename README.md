@@ -136,10 +136,12 @@ Writing Groovy Scripts
 Prior to launching each script, NaNoBot pre-populates numerous variable bindings for the Groovy script engine:
 * Each valid keypair in the properties file (the key must be a valid Groovy identifier)
 * USERS The list of users currently in the channel
+* VERSION The current version of NaNoBot
 
 Upon completion of the script, all variable bindings are persisted to the NaNoBot properties for subsequent runs (either by the same script or another script) except for the following:
 * USERS
 * MESSAGE
+* VERSION
 * Any variable beginning with an underscore (_) character
 
 If the script writes to a variable called "MESSAGE" then NaNoBot will broadcast that message to the channel.

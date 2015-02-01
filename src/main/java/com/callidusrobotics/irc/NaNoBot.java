@@ -72,7 +72,7 @@ public class NaNoBot extends PircBot implements Runnable {
     naNoBot.run();
   }
 
-  private static String getImplementationVersion() {
+  public static String getImplementationVersion() {
     final Package myPackage = NaNoBot.class.getPackage();
     final String implementationVersion = myPackage.getImplementationVersion();
 

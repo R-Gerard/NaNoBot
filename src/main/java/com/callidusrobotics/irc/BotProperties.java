@@ -60,7 +60,7 @@ public class BotProperties {
   }
 
   public BotProperties(Properties properties) {
-    this.properties = new Properties();
+    this.properties = properties;
 
     for (BotPropertyKey prop : BotPropertyKey.values()) {
       String value = properties.getProperty(prop.getKey(), prop.getDefaultValue());

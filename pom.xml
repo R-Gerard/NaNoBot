@@ -75,6 +75,13 @@
       <version>2.2.2</version>
     </dependency>
 
+    <!-- This is to support @Grab in Groovy scripts -->
+    <dependency>
+      <groupId>org.apache.ivy</groupId>
+      <artifactId>ivy</artifactId>
+      <version>2.4.0</version>
+    </dependency>
+
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
