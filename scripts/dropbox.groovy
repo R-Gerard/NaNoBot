@@ -1,16 +1,24 @@
 /**
  * dropbox.groovy
  *
- * Synchronizes the channel_messages.log file with Dropbox.
+ * Synchronizes the channel_messages.log file with Dropbox and pushes the wordcount to the NaNoWriMo Wordcount API.
  *
  * First-time setup
  *     Go to https://www.dropbox.com/developers/apps/ and create a new App, then generate an access token for it.
+ *     Go to http://nanowrimo.org/api/wordcount and generate a secret key.
+ *     Install cURL: http://curl.haxx.se/
  *
  * Input Properties (from NaNoBot.properties)
  * dropbox_accessToken
  *     An OAuth access token used by the app for interacting with the remote file share
  * dropbox_remoteFile
  *     The path to the remote file to synchronize with, e.g. "/NaNoBot/channel_messages.log"
+ * nanowrimo_username
+ *     This is the NaNoWriMo account to update
+ * nanowrimo_secret
+ *     This is the API key generated for the corresponding user
+ * nanowrimo_host
+ *     This is the hostname of the site to publish data to (e.g. 'http://nanowrimo.org' or 'http://campnanowrimo.org')
  *
  * Output Properties
  * dropbox_linecount
@@ -20,7 +28,9 @@
  */
 
 @Grab(group='com.dropbox.core', module='dropbox-core-sdk', version='1.7.7')
+@Grab(group='commons-codec', module='commons-codec', version='1.10')
 
+import org.apache.commons.codec.digest.DigestUtils
 import com.dropbox.core.*
 import java.io.*
 import java.util.Locale
@@ -103,3 +113,13 @@ println("dropbox_wordcount: ${dropbox_wordcount}")
 
 // Perform cleanup
 _tempFile.delete()
+
+// Publish the wordcount to the Wordcount API
+_hash = DigestUtils.sha1Hex(nanowrimo_secret + nanowrimo_username + dropbox_wordcount)
+_body = 'hash=' + _hash + '&name=' + nanowrimo_username + '&wordcount=' + dropbox_wordcount
+_url = nanowrimo_host + '/api/wordcount'
+_cmd = ['curl', '-X', 'PUT', '--data', _body, _url]
+
+println(_cmd.join(' '))
+_response = _cmd.execute().text
+println(_response)
