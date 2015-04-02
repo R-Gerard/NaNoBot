@@ -29,6 +29,7 @@ import java.util.Properties;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jibble.pircbot.IrcException;
 import org.jibble.pircbot.NickAlreadyInUseException;
 import org.jibble.pircbot.PircBot;
@@ -87,13 +88,9 @@ public class NaNoBot extends PircBot implements Runnable {
     botProperties = new BotProperties(properties);
 
     String server = botProperties.getServer();
-    int port = botProperties.getPort();
     channel = botProperties.getChannel();
     String name = botProperties.getLogin();
-    String password = botProperties.getPassword();
-
     boolean verbose = botProperties.isVerbose();
-    boolean runIdentServer = botProperties.identServerEnabled();
 
     String[] users = botProperties.getControlUsers();
     for (String user : users) {
@@ -112,13 +109,6 @@ public class NaNoBot extends PircBot implements Runnable {
     setVerbose(verbose);
     setName(name);
     setLogin(name);
-
-    if (runIdentServer) {
-      startIdentServer();
-    }
-
-    connect(server, port, password);
-    joinChannel(channel);
 
     // Look for a property called "scripts" which should be a comma-separated list
     // scripts = foo.groovy, bar.groovy
@@ -245,16 +235,38 @@ public class NaNoBot extends PircBot implements Runnable {
 
   @Override
   public void run() {
-    sendMessageToChannel(botProperties.getStartupMsg());
     scheduler.start();
+
+    if (botProperties.identServerEnabled()) {
+      startIdentServer();
+    }
 
     try {
       while (true) {
-        Thread.sleep(1000);
+        if (!isConnected() || getChannels().length == 0) {
+          try {
+            disconnect();
+            connectAndJoin();
+          } catch (Exception e) {
+            log(ExceptionUtils.getStackTrace(e));
+          }
+        }
+
+        Thread.sleep(20000);
       }
     } catch (InterruptedException e) {}
 
     shutdown();
+  }
+
+  private void connectAndJoin() throws NickAlreadyInUseException, IOException, IrcException {
+    String server = botProperties.getServer();
+    int port = botProperties.getPort();
+    String password = botProperties.getPassword();
+
+    connect(server, port, password);
+    joinChannel(channel);
+    sendMessageToChannel(botProperties.getStartupMsg());
   }
 
   public void shutdown() {
