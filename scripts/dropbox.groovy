@@ -36,9 +36,6 @@ import java.io.*
 import java.util.Locale
 
 // Set up the Dropbox client
-//println("dropbox_accessToken: ${dropbox_accessToken}")
-//println("dropbox_remoteFile: ${dropbox_remoteFile}")
-
 _clientIdentifier = 'NaNoBot/' + VERSION + ' dropbox.groovy/1.0'
 DbxRequestConfig _config = new DbxRequestConfig(_clientIdentifier, Locale.getDefault().toString())
 DbxClient _client = new DbxClient(_config, dropbox_accessToken)
@@ -66,13 +63,15 @@ try {
 println("Searching for entry: '${_lastTimestamp}'")
 
 // Add any new entries in the message logs to the file
-new File('.').eachFileMatch(~/channel_messages.*/) { file->
+_files = []
+new File('.').eachFileMatch(~/channel_messages.*/) { _files << it }
+_files.sort()
+_files.each { file->
   println("Found file: ${file.name}")
 
   file.eachLine { line->
     if (_foundTimestamp) {
       _tempFile.append(line + '\n')
-      //println("Appended: ${line}")
     }
 
     if (line.startsWith(_lastTimestamp + ' - ')) {
@@ -83,10 +82,9 @@ new File('.').eachFileMatch(~/channel_messages.*/) { file->
 
 // The log files on disk don't have the last entry in the Dropbox file (The app was probably moved to another computer)
 if (!_foundTimestamp) {
-  new File('.').eachFileMatch(~/channel_messages.*/) { file->
+  _files.each { file->
     file.eachLine { line->
       _tempFile.append(line + '\n')
-      //println("Appended: ${line}")
     }
   }
 }
