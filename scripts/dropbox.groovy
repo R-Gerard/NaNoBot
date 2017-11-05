@@ -27,25 +27,29 @@
  *     The total number of words written to the file
  */
 
-@Grab(group='com.dropbox.core', module='dropbox-core-sdk', version='1.7.7')
+@Grab(group='com.dropbox.core', module='dropbox-core-sdk', version='3.0.5')
 @Grab(group='commons-codec', module='commons-codec', version='1.10')
 
 import org.apache.commons.codec.digest.DigestUtils
 import com.dropbox.core.*
+import com.dropbox.core.v2.*
+import com.dropbox.core.v2.files.*
 import java.io.*
 import java.util.Locale
 
 // Set up the Dropbox client
-_clientIdentifier = 'NaNoBot/' + VERSION + ' dropbox.groovy/1.0'
+_clientIdentifier = 'NaNoBot/' + VERSION + ' dropbox.groovy/2.0'
 DbxRequestConfig _config = new DbxRequestConfig(_clientIdentifier, Locale.getDefault().toString())
-DbxClient _client = new DbxClient(_config, dropbox_accessToken)
+DbxClientV2 _client = new DbxClientV2(_config, dropbox_accessToken)
 
 // Pull down the remote file
 _tempFileName = dropbox_remoteFile.tokenize('/').last() + '.tmp'
 FileOutputStream _outputStream = new FileOutputStream(_tempFileName)
 try {
-  DbxEntry.File _downloadedFile = _client.getFile(dropbox_remoteFile, null, _outputStream)
+  FileMetadata _downloadedFile = _client.files().downloadBuilder(dropbox_remoteFile).download(_outputStream)
   println("Downloaded file: ${_downloadedFile}")
+} catch (e) {
+  printn(e.message)
 } finally {
   _outputStream.close()
 }
@@ -92,7 +96,7 @@ if (!_foundTimestamp) {
 // Upload the new version of the file (or create it if it's missing)
 FileInputStream _inputStream = new FileInputStream(_tempFile)
 try {
-  DbxEntry.File _uploadedFile = _client.uploadFile(dropbox_remoteFile, DbxWriteMode.update(), _tempFile.length(), _inputStream)
+  FileMetadata _uploadedFile = _client.files().uploadBuilder(dropbox_remoteFile).withMode(WriteMode.OVERWRITE).uploadAndFinish(_inputStream)
   println("Uploaded: ${_uploadedFile}")
 } finally {
   _inputStream.close()
