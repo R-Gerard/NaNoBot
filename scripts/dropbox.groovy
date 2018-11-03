@@ -28,7 +28,7 @@
  */
 
 @Grab(group='com.dropbox.core', module='dropbox-core-sdk', version='3.0.10')
-@Grab(group='commons-codec', module='commons-codec', version='1.10')
+@Grab(group='commons-codec', module='commons-codec', version='1.11')
 
 import org.apache.commons.codec.digest.DigestUtils
 import com.dropbox.core.*
