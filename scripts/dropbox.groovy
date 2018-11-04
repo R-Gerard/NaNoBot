@@ -107,7 +107,9 @@ dropbox_linecount = 0
 dropbox_wordcount = 0
 for (line in _tempFile.readLines()) {
   dropbox_linecount++
-  dropbox_wordcount += line.substring(line.indexOf(' - ') + 2).trim().split('\\s++').size()
+  if (line.indexOf(' - ') >= 0) {
+    dropbox_wordcount += line.substring(line.indexOf(' - ') + 2).trim().split('\\s++').size()
+  }
 }
 
 println("dropbox_linecount: ${dropbox_linecount}")
