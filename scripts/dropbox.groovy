@@ -6,7 +6,6 @@
  * First-time setup
  *     Go to https://www.dropbox.com/developers/apps/ and create a new App, then generate an access token for it.
  *     Go to http://nanowrimo.org/api/wordcount and generate a secret key.
- *     Install cURL: http://curl.haxx.se/
  *
  * Input Properties (from NaNoBot.properties)
  * dropbox_accessToken
@@ -29,11 +28,13 @@
 
 @Grab(group='com.dropbox.core', module='dropbox-core-sdk', version='3.0.10')
 @Grab(group='commons-codec', module='commons-codec', version='1.11')
+@Grab(group='com.mashape.unirest', module='unirest-java', version='1.4.9')
 
 import org.apache.commons.codec.digest.DigestUtils
 import com.dropbox.core.*
 import com.dropbox.core.v2.*
 import com.dropbox.core.v2.files.*
+import com.mashape.unirest.http.*
 import java.io.*
 import java.util.Locale
 
@@ -120,10 +121,18 @@ _tempFile.delete()
 
 // Publish the wordcount to the Wordcount API
 _hash = DigestUtils.sha1Hex(nanowrimo_secret + nanowrimo_username + dropbox_wordcount)
-_body = 'hash=' + _hash + '&name=' + nanowrimo_username + '&wordcount=' + dropbox_wordcount
-_url = nanowrimo_host + '/api/wordcount'
-_cmd = ['curl', '-X', 'PUT', '--data', _body, _url]
+_url = "${nanowrimo_host}/api/wordcount"
 
-println(_cmd.join(' '))
-_response = _cmd.execute().text
-println(_response)
+// Print the cURL call for troubleshooting purposes
+println("curl -X PUT --data 'hash=${_hash}&name=${nanowrimo_username}&wordcount=${dropbox_wordcount}' '${_url}'")
+
+_response = Unirest.put(_url)
+                   .field('hash', _hash)
+                   .field('name', nanowrimo_username)
+                   .field('wordcount', "${dropbox_wordcount}")
+                   .asString();
+
+println("${_response.status} (${_response.statusText})")
+println(_response.body)
+
+Unirest.shutdown()
