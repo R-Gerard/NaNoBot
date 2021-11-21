@@ -30,6 +30,6 @@ _response = Unirest.get(_url)
 
 _parser = new JsonSlurper()
 
-MESSAGE = _parser.parseText(_response.body)['data']['image_url']
+MESSAGE = _parser.parseText(_response.body)['data']['images']['original']['url']
 
 println(MESSAGE)
